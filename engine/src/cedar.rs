@@ -32,8 +32,9 @@
 //! reserved reason from `RuntimeError`.
 
 use crate::{
-    constants::policy_input as pi_key, runtime::PolicyDispatcher, CedarPolicyInvocation, JsonValue,
-    PreparedPolicyInvocation, RuntimeError,
+    constants::policy_input as pi_key, policy_output::reject_unknown_members,
+    runtime::PolicyDispatcher, CedarPolicyInvocation, JsonValue, PreparedPolicyInvocation,
+    RuntimeError,
 };
 use serde::Deserialize;
 use serde_json::{json, Map};
@@ -668,23 +669,6 @@ pub fn translate_advice(advice: JsonValue) -> Result<JsonValue, RuntimeError> {
     }
 
     Ok(JsonValue::Object(out))
-}
-
-/// Fail closed on the first member of `object` outside `allowed`. The
-/// verdict the dispatcher builds never copies such a member, so this is
-/// about matching the schema the specification promises, not about a
-/// member reaching the runtime.
-fn reject_unknown_members(
-    object: &Map<String, JsonValue>,
-    allowed: &[&str],
-    what: &str,
-) -> Result<(), RuntimeError> {
-    match object.keys().find(|key| !allowed.contains(&key.as_str())) {
-        Some(member) => Err(RuntimeError::PolicyOutputInvalid(format!(
-            "{what} has a member the advice schema does not allow: '{member}'"
-        ))),
-        None => Ok(()),
-    }
 }
 
 /// Pick one verdict from the translated advice of every contributing
@@ -2068,7 +2052,15 @@ mod tests {
                 "runtime_error:policy_output_invalid",
                 "{advice}"
             );
-            assert!(error.detail().contains(member), "{advice}: {error}");
+            assert!(
+                matches!(
+                    error.detail(),
+                    "cedar advice has an unknown member"
+                        | "cedar advice 'transform' has an unknown member"
+                ),
+                "{advice}: {error}"
+            );
+            assert!(!error.detail().contains(member), "{advice}: {error}");
         }
         let value = translate_advice(json!({
             "verdict": "transform",

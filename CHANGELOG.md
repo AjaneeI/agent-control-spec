@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Reject unknown policy-output members before typed verdict conversion. Unknown
+  root, warning and transform members now fail closed with
+  `runtime_error:policy_output_invalid` instead of being silently discarded.
+  Opaque approval metadata, transform values and evidence pointer names remain
+  unchanged, as do the `warn` and `escalate` policy intents.
+
 - Release workflow: every npm package publishes under `latest`,
   pre-releases included, and a pre-release also gets a channel tag
   (`alpha`, `beta`, `rc` or `next`) from the workflow. The by-hand
