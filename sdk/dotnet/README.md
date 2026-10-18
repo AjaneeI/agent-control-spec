@@ -30,8 +30,8 @@ that the underlying evaluation has stopped when cancellation is requested.
 Hosts must bound custom dispatchers themselves, including finite I/O
 deadlines and bounded computation. Limits on bundled dispatchers do not
 bound arbitrary host-supplied callbacks. Moving evaluation to a worker
-does not by itself stop running work on cancellation: bound concurrency
-and retain its capacity until that work actually finishes.
+does not stop running work on cancellation, so bound concurrency and
+count the worker as busy until the work finishes.
 
 See [#144](https://github.com/responsibleai/agent-control-spec/issues/144)
 for the separate runtime follow-up.

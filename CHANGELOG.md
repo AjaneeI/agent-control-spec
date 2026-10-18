@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Document synchronous interception timeout limits in Rust, Node and .NET guidance.
+
 - Reject unknown policy-output members before typed verdict conversion. Unknown
   root, warning and transform members now fail closed with
   `runtime_error:policy_output_invalid` instead of being silently discarded.
