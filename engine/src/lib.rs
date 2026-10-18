@@ -11,6 +11,24 @@
 //! annotators, and the normalization of raw policy output into
 //! agent-hooks verdicts. [`AcsInterceptor`] is the integration
 //! surface a host registers with its agent-hooks emitter.
+//!
+//! # Timeouts and blocking evaluation
+//!
+//! [`AcsInterceptor`] evaluates synchronously inside its async `intercept`
+//! method and does not yield while the runtime or a dispatcher is running.
+//! The agent-hooks emitter's timeout cannot preempt that evaluation. A slow
+//! or hung custom dispatcher can therefore keep an emission occupied beyond
+//! its deadline; a timeout is not a guarantee of an `host_error:interceptor_timeout`
+//! deny or of evaluation having stopped.
+//!
+//! Hosts must bound custom dispatchers themselves, including finite I/O
+//! deadlines and bounded computation. Limits on bundled dispatchers do not
+//! bound arbitrary host-supplied callbacks. Moving evaluation to a worker
+//! does not by itself stop running work on cancellation: bound concurrency
+//! and retain its capacity until that work actually finishes.
+//!
+//! See [#144](https://github.com/responsibleai/agent-control-spec/issues/144)
+//! for the separate runtime follow-up.
 
 pub type JsonValue = serde_json::Value;
 
