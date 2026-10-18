@@ -36,6 +36,25 @@ annotators make HTTPS calls during evaluation when the manifest declares
 annotators, and evaluation blocks for the annotator budget. A manifest
 with no annotators makes no network call.
 
+## Timeouts and blocking evaluation
+
+`AcsInterceptor.intercept` calls the native engine synchronously on the
+JavaScript thread. It does not yield while evaluation or a host callback
+is running. The agent-hooks emitter's timeout cannot preempt that call;
+a `Promise.race` or timer around it does not interrupt a blocked thread.
+A slow or hung dispatcher can keep an emission occupied beyond its
+deadline. Do not assume a timeout denial will be returned, or that the
+underlying evaluation has stopped.
+
+Hosts must bound custom dispatchers themselves, including finite I/O
+deadlines and bounded computation. Limits on bundled dispatchers do not
+bound arbitrary host-supplied callbacks. Moving evaluation to a worker
+does not by itself stop running work on cancellation: bound concurrency
+and retain its capacity until that work actually finishes.
+
+See [#144](https://github.com/responsibleai/agent-control-spec/issues/144)
+for the separate runtime follow-up.
+
 ## Activating a policy version
 
 A host that pins a policy version and serves traffic against it wants
