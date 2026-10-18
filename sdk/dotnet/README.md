@@ -17,6 +17,25 @@ annotators make HTTPS calls during evaluation when the manifest declares
 annotators, and evaluation blocks for the annotator budget. A manifest
 with no annotators makes no network call.
 
+## Timeouts and blocking evaluation
+
+`AcsInterceptor.InterceptAsync` currently performs the native evaluation
+synchronously before returning a completed `ValueTask`. Its
+`CancellationToken` parameter is not observed. The async-shaped signature
+does not offload the native call, and the emitter's timeout cannot preempt
+that evaluation. A slow or hung dispatcher can keep an emission occupied
+beyond its deadline. Do not assume a timeout denial will be returned, or
+that the underlying evaluation has stopped when cancellation is requested.
+
+Hosts must bound custom dispatchers themselves, including finite I/O
+deadlines and bounded computation. Limits on bundled dispatchers do not
+bound arbitrary host-supplied callbacks. Moving evaluation to a worker
+does not by itself stop running work on cancellation: bound concurrency
+and retain its capacity until that work actually finishes.
+
+See [#144](https://github.com/responsibleai/agent-control-spec/issues/144)
+for the separate runtime follow-up.
+
 ## Install
 
 ```sh
