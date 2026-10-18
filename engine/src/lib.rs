@@ -18,7 +18,7 @@
 //! method and does not yield while the runtime or a dispatcher is running.
 //! The agent-hooks emitter's timeout cannot preempt that evaluation. A slow
 //! or hung custom dispatcher can therefore keep an emission occupied beyond
-//! its deadline; a timeout is not a guarantee of an `host_error:interceptor_timeout`
+//! its deadline; a timeout is not a guarantee of a `host_error:interceptor_timeout`
 //! deny or of evaluation having stopped.
 //!
 //! Hosts must bound custom dispatchers themselves, including finite I/O
