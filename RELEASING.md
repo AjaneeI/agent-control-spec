@@ -8,7 +8,7 @@ the tag's publication set. The tag workflow does not publish the generator.
    `sdk/python/{Cargo.toml,pyproject.toml}` + `Cargo.lock`,
    `sdk/node/package.json` + `npm/*/package.json` + lockfile,
    `sdk/dotnet/src/AgentControlSpec/AgentControlSpec.csproj`,
-   `generator/pyproject.toml`) and add a
+   `generator/pyproject.toml`, `sdk/remote-policy/python/pyproject.toml`) and add a
    `CHANGELOG.md` entry, through a PR. Python's `__version__` is NOT on
    that list and must not be added to it: it is read from the installed
    distribution, and `sdk/python/tests/test_version.py` fails if someone
@@ -40,15 +40,45 @@ the tag's publication set. The tag workflow does not publish the generator.
    come from that section through `scripts/release-notes.py`).
 
 4. The tag run publishes: crates.io `agent-control-spec`, PyPI
-   `agent-control-spec`, npm `@responsibleai/agent-control-spec` plus
+   `agent-control-spec` and optional `agent-control-spec-remote-policy`,
+   npm `@responsibleai/agent-control-spec` plus
    four platform packages, NuGet `ResponsibleAI.AgentControlSpec`.
    Each artifact carries the LICENSE text and a build provenance
    attestation; the npm attestation covers the exact tarballs the
    workflow publishes. A final job creates the GitHub Release for the
-   tag (pre-release when the version has a hyphen) with the four SBOMs
+   tag (pre-release when the version has a hyphen) with the five SBOMs
    attached. All legs are idempotent: already-published versions are
    skipped and an existing release gets its SBOMs re-uploaded, so a
    re-run after a partial failure is safe.
+
+   Before the tag that first publishes the polling package
+   `agent-control-spec-remote-policy`, finish these gates in the release PR or
+   the project settings:
+
+   - Bump every version surface as in step 1. The polling package requires the
+     core release it ships with: set its `agent-control-spec` requirement in
+     `sdk/remote-policy/python/pyproject.toml` to the version being released
+     (`>=<version>,<next minor>`). `scripts/check-version-consistency.py`
+     derives the expected requirement from the core version and fails until they
+     match, so the script itself needs no edit. The first core release that
+     carries the managed activation API (`MANAGED_ACTIVATION_API_VERSION == 1`)
+     must be a new version, never one already published. Never republish
+     changed bytes under a published version.
+   - Verify real installed archives: the new core with the new polling package,
+     and the new core on its own.
+   - Remove the unreleased markers: the opening sentence of
+     `docs/remote-policy-contract.md`, the "Remote policies (unreleased)" heading
+     in `sdk/python/README.md`, and the checkout-only install notes in
+     `sdk/remote-policy/python/README.md` and `examples/remote_policy/README.md`.
+   - Register a PyPI pending publisher for the new project name, for this
+     repository, `release.yml` and the `release` environment. The base package's
+     publisher does not grant permission to a different distribution, and adding
+     the workflow configuration does not create that publisher or publish a
+     package. The polling package uploads in its own step before the base
+     package, so a missing publisher fails that step before any file of the base
+     package is uploaded; fix the publisher and re-run the failed job, which
+     skips what exists. Upload steps run only for a pushed tag, so no dry run
+     exercises them: read their order in `release.yml` before tagging.
 
 5. npm dist-tags. The workflow publishes every version under
    `latest`, pre-releases included, so a plain `npm install` gets the
@@ -89,8 +119,14 @@ version first; bump the pin in a PR once CI is green on it, not during
 a release. maturin installs by hash from
 `.github/requirements/maturin.txt`, and `check-version-consistency.py`
 fails when that pin, `[build-system] requires` in
-`sdk/python/pyproject.toml` and `requirements-dev.lock` disagree; the
-header of the requirements file says how to regenerate it. npm is
+`sdk/python/pyproject.toml` and the `requirements-dev.lock` files under
+`sdk/python/` and `sdk/remote-policy/python/` disagree; the header of the
+core requirements file says how to regenerate it, and the section on
+dependency locks below covers the optional package's. The optional polling
+package builds without isolation against setuptools installed by hash from
+`.github/requirements/setuptools.txt`; the same script fails when that pin,
+`[build-system] requires` in `sdk/remote-policy/python/pyproject.toml` and the
+setuptools pin in the optional lock disagree. npm is
 installed at an exact version in the publish step because the npm
 bundled with Node 22 predates trusted publishing. NuGet restores with
 `--locked-mode` against the committed
@@ -194,4 +230,19 @@ cannot install a release that does not exist yet.
 
 When changing `sdk/python/requirements-dev.in`, regenerate its lock with
 `uv pip compile requirements-dev.in -o requirements-dev.lock --universal --generate-hashes`
-from `sdk/python/`. The checkout tests use that lock, not the consumer pin.
+from `sdk/python/`. Core-only contributor environments use that lock; CI uses
+the optional lock described next.
+
+The Python CI job installs `sdk/remote-policy/python/requirements-dev.lock`, which
+also pins everything in `sdk/python/requirements-dev.in` through
+`-r ../../python/requirements-dev.in`. Change either `.in` file, then regenerate
+that lock from `sdk/remote-policy/python/` with
+`uv pip compile requirements-dev.in -o requirements-dev.lock --universal --generate-hashes --no-annotate --no-header`
+and review the diff. The committed file has no header or annotations so no
+machine-specific path can enter it; the command above is the one that produces
+that format, so run it where the index serves every pin and expect only the pins
+you changed to move. Then run `python scripts/check-version-consistency.py`: it
+fails if the maturin pins in the two locks, `.github/requirements/maturin.txt`
+and `sdk/python/pyproject.toml` disagree, or if the setuptools pins in the optional
+lock, `.github/requirements/setuptools.txt` and the polling package's
+`pyproject.toml` disagree.

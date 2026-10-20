@@ -34,3 +34,5 @@ manifest-path = "Cargo.toml"
 # Prepending this SDK directory would shadow an installed wheel with the
 # source package, which has no native extension in a clean checkout.
 addopts = ["--import-mode=importlib"]
+# Reference-example integration tests import the checkout, not a shadow SDK.
+pythonpath = ["../.."]
