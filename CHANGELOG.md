@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Node documentation: list the four prebuilt native package targets and
+  clarify platform gaps and explicit source-build requirements.
 - Examples: the legacy example set that predates the extraction (23 manifests with their apps and policies) is removed. It targeted the earlier API and no longer loaded; the remaining examples are unchanged.
 - Node: `AcsInterceptor.intercept` runs the evaluation on a thread of its
   own and returns a Promise, so the agent-hooks emitter timeout can

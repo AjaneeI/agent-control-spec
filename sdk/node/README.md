@@ -18,6 +18,34 @@ version such as `@0.4.0-beta.1`. Check what the tags resolve to with
 `npm view @responsibleai/agent-control-spec dist-tags`. The package
 pulls in `@responsibleai/agent-hooks` as a dependency.
 
+### Prebuilt native binaries
+
+Node.js 20 or later is required. The release workflow builds these four
+native platform packages, selected as optional dependencies of the loader:
+
+| Platform | Architecture | Platform package suffix |
+| --- | --- | --- |
+| Linux with glibc | x64 | `linux-x64-gnu` |
+| macOS | x64 (Intel) | `darwin-x64` |
+| macOS | arm64 (Apple Silicon) | `darwin-arm64` |
+| Windows with MSVC | x64 | `win32-x64-msvc` |
+
+Each suffix completes `@responsibleai/agent-control-spec-<suffix>`.
+Keep npm optional dependencies enabled so the matching native package
+can be installed. The target list is declared in [package.json](package.json)
+and built by the [release workflow](../../.github/workflows/release.yml).
+
+There are no prebuilt packages for Linux arm64, musl-based Linux (such
+as Alpine), Windows arm64 or other targets outside this list. The
+generated loader recognizes additional platforms, but that does not mean
+a binary is published for them.
+
+Installing the npm package does not compile the Rust engine: there is no
+automatic source-build install script. An explicit build from a repository
+checkout requires a Rust toolchain and the Node development dependencies;
+run `npm ci` then `npm run build` from `sdk/node`. A source build on an
+unlisted target is outside the prebuilt release matrix.
+
 ## Usage
 
 ```ts
