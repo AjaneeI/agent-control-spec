@@ -24,6 +24,7 @@ updates:
     directories:
       - "/sdk/python"
       - "/sdk/remote-policy/python"
+      - "/generator"
     schedule: { interval: weekly }
     groups:
       python: { patterns: ["*"] }
