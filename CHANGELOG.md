@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include the policy generator's Python dependencies in weekly grouped Dependabot updates (#138).
+
 - Node: the release builds a Linux arm64 (glibc) binary on an arm64
   runner, the way the .NET package already gets `linux-arm64`, and
   ships it as `@responsibleai/agent-control-spec-linux-arm64-gnu`, the
